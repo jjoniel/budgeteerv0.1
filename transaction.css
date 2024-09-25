@@ -1,0 +1,73 @@
+table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+.add-row-btn {
+    margin-top: 10px;
+}
+
+.remove {
+    border: none;
+    background-color: transparent;
+}
+
+.remove-holder {
+    border: none;
+    text-align: right;
+}
+
+.remove-adjacent {
+    border-right: 1px solid #dddddd;
+}
+
+table input, table select {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    font-size: 12pt;
+    
+}
+
+table input:focus, table select:focus {
+    outline: none;
+}
+
+::placeholder {
+    color: #999;
+}
+
+.unit{
+    width: 20%;
+    display: inline-block;
+}
+
+.new-unit-fields {
+    display: inline-block;
+    margin: 0;
+    width: 75%;
+}
+
+.new-unit-fields input {
+    margin: 0;
+    width: 30%;
+}
+
+.default-holder {
+    display: inline-block;
+    width: 20%;
+}
+
+.hidden {
+    visibility: hidden;
+}

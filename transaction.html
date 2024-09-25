@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+    <head>
+
+        <title>Transaction Details</title>
+
+        <!-- original autocomplete + jquery -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+
+        <!-- delete icon -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        
+        <!-- fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Raleway&display=swap" rel="stylesheet">
+        
+        <!-- own css -->
+        <link rel="stylesheet" href="/static/transaction.css">
+
+    </head>
+    <body>
+        
+        <h1>Transaction Details</h1>
+
+        <form id="transaction-form" action="/add_transaction" method="POST">
+            <label for="merchant">Select Merchant:</label>
+            <select id="merchant" name="merchant">
+                {% for merchant in merchants %}
+                <option value="{{ loop.index }}" {% if loop.first %} selected {% endif %}>{{ merchant }}</option>
+                {% endfor %}
+                <option value="new">Add New</option>
+            </select>
+            <br>
+            <br>
+            <div id="new-merchant" style="display: none;">
+                <label for="new-merchant-name">Name:</label>
+                <input type="text" class="news" id="new-merchant-name" name="new_merchant_name">
+                <br><br>
+                <label for="new-merchant-category">Category:</label>
+                <input type="text" class="news" id="new-merchant-category" name="new_merchant_category">
+                <br>
+                <br>
+            </div>
+
+            <label for="date">Date of Transaction:</label>
+            <input type="date" id="date" name="date" value="{{ today }}">
+            <br><br>
+
+            <table id="transaction-table">
+                <thead>
+                    <tr>
+                        <th style="width:30%">Product Name</th>
+                        <th style="width:5%">Quantity</th>
+                        <th style="width:30%">Unit</th>
+                        <th style="width:15%">Category</th>
+                        <th class="remove-adjacent" style="width:18%">Total Price</th>
+                        <td class="remove-holder" style="width:2%"></td>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" class="product-name" name="product_name[]" placeholder="enter product name"></td>
+                        <td><input type="number" class="quantity" name="quantity[]" min="1" value=""></td>
+                        <td>
+                            <select class="unit" name="unit[]">
+                                <option value="unit">unit</option>
+                                <option value="new">add unit</option>
+                            </select>
+                            <div class="new-unit-fields" style="visibility: hidden;">
+                                <input type="text" class="new-unit-name" name="new_unit_name[]" placeholder="unit name">
+                                <input type="number" class="new-unit-size" name="new_unit_size[]" min="0" placeholder="unit size">
+                                <div class="default-holder">
+                                    <label for="new-unit-default">base</label>
+                                    <input type="checkbox" class="new-unit-default" name="new_unit_default[]" value="1"/>
+                                </div>
+                            </div>
+                        </td>
+                        <td><input type="text" class="cat" name="cat[]" placeholder="enter category name"></td>
+                        <td class="remove-adjacent">
+                            <input type="number" class="total-price" name="total_price[]" step=".01" placeholder="0.00">
+                        </td>
+                        <td class="remove-holder">
+                            <button class="remove">
+                                <i class="fas fa-times-circle" style="color: red;"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot id="total-section">
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>Item Count:</strong></td>
+                        <td><span id="total-items">0</span></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4" style="text-align: right;"><strong>Total:</strong></td>
+                        <td><span id="total-amount">$0.00</span></td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <button type="button" class="add-row-btn">Add Row</button>
+            <br><br>
+
+            <input type="submit" value="Submit Transaction">
+        </form>
+
+        <script>
+            $(document).ready(function() {
+                // first row autocompletion
+                var existingProductNames = {{ existing_product_names | tojson}};
+                var categories = {{ categories | tojson}};
+                $('.product-name').autocomplete({
+                    source: existingProductNames,
+                    minLength: 1
+                });
+                $('.cat').autocomplete({
+                    source: categories,
+                    minLength: 1
+                });
+
+                // first row listeners
+                $('.product-name').on('input', updateUnitOptions);
+                $('.product-name').on('change', updateUnitOptions);
+                $('.product-name').on('blur', updateUnitOptions);
+
+                // adding a new row
+                $('.add-row-btn').on('click', function() {
+                    $('#transaction-table tbody').append(
+                        `<tr>
+                            <td><input type="text" class="product-name" name="product_name[]" placeholder="enter product name"></td>
+                            <td><input type="number" class="quantity" name="quantity[]" min="1" value=""></td>
+                            <td>
+                                <select class="unit" name="unit[]">
+                                    <option value="unit">unit</option>
+                                    <option value="new">add unit</option>
+                                </select>
+                                <div class="new-unit-fields" style="visibility: hidden;">
+                                    <input type="text" class="new-unit-name" name="new_unit_name[]" placeholder="unit name">
+                                    <input type="number" class="new-unit-size" name="new_unit_size[]" min="0" placeholder="unit size">
+                                    <div class="default-holder">
+                                        <label for="new-unit-default">base</label>
+                                        <input type="checkbox" class="new-unit-default" name="new_unit_default[]" value="1"/>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><input type="text" class="cat" name="cat[]" placeholder="enter category name"></td>
+                            <td class="remove-adjacent">
+                                <input type="number" class="total-price" name="total_price[]" step=".01" placeholder="0.00">
+                            </td>
+                            <td class="remove-holder">
+                                <button class="remove">
+                                    <i class="fas fa-times-circle" style="color: red;"></i>
+                                </button>
+                            </td>
+                        </tr>`
+                    );
+
+                    // autocompletion
+                    $('.product-name').autocomplete({
+                        source: existingProductNames,
+                        minLength: 1
+                    });
+                    $('.cat').autocomplete({
+                        source: categories,
+                        minLength: 1
+                    });
+
+                    // listeners
+                    $('.product-name').off('input').on('input', updateUnitOptions);
+                    $('.product-name').off('change').on('change', updateUnitOptions);
+                    $('.product-name').off('blur').on('blur', updateUnitOptions);
+
+                    $(document).on('input', '.total-price', updateTotal);
+                    $(document).on('input', '.quantity', updateTotal);
+                    $(document).on('click', '.remove', function() {
+                        $(this).closest('tr').remove();
+                        updateTotal();
+                    });
+
+                    $('.unit').on('change', function() {
+                        var selectedValue = $(this).val();
+                        if (selectedValue === 'new') {
+                            $(this).closest('tr').find('.new-unit-fields').css('visibility', 'visible');
+                        } else {
+                            $(this).closest('tr').find('.new-unit-fields').css('visibility', 'hidden');
+                        }
+                    });
+                    $('.unit').trigger('change');
+
+                    updateTotal();
+                });
+
+                var productUnitsMap = {{ units_map | tojson}};
+                var productCatsMap = {{ cats_map | tojson}};
+
+                function updateUnitOptions() {
+                    var productName = $(this).val().toUpperCase();
+                    var unitSelect = $(this).closest('tr').find('.unit');
+                    var catSelect = $(this).closest('tr').find('.cat');
+                    if (productUnitsMap.hasOwnProperty(productName)) {
+                        catSelect.val(productCatsMap[productName]);
+                        unitSelect.empty();
+                        $.each(productUnitsMap[productName], function(index, value) {
+                            unitSelect.append($('<option>', {
+                                value: value,
+                                text: value
+                            }));
+                        });
+                        unitSelect.append('<option value="unit">unit</option>');
+                        unitSelect.append('<option value="new">add unit</option>');
+                    } else {
+                        catSelect.val('');
+                        unitSelect.empty();
+                        unitSelect.append('<option value="unit">unit</option>');
+                        unitSelect.append('<option value="new">add unit</option>');
+                    }
+                    $('.unit').trigger('change');
+                }
+                $("#transaction-form").on('submit', function() {
+                    var checkboxes = document.querySelectorAll('.new-unit-default');
+                    checkboxes.forEach(function(checkbox) {
+                        if (!checkbox.checked) {
+                            checkbox.value = '0';
+                            checkbox.checked = true;
+                        }
+                    });
+                })
+            });
+        </script>
+        <script src="/static/transaction.js"></script>
+    </body>
+</html>
